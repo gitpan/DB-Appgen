@@ -1,5 +1,11 @@
 Revision history for Perl extension DB::appgen.
 
+0.4   Wed Aug  2 18:38:50 PDT 2000
+
+	$db->attribute and $db->record methods added.
+
+	Small fixes and enhancements.
+
 0.3   Tue Aug  1 19:47:02 PDT 2000
 
 	Extract fixed.

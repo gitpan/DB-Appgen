@@ -69,4 +69,17 @@ tprint "extract(3,4)", ! defined($str);
 
 tprint "insert(ZZZ)", $db->insert(attribute => 3, value => 4, text => 'ZZZ');
 
+tprint "rewind", $db->rewind;
+
+tprint "next", $db->next eq 'Test';
+
+tprint "attribute", join('|',$db->attribute(attribute => 2)) eq '||Test Data 2-3';
+
+my @rec=$db->record;
+tprint "record.size", @rec == 3;
+tprint "record.attr(1)", @{$rec[1]} == 2;
+tprint "record.value", join("|",@{$rec[1]}) eq '|Test Data 1-2';
+
+tprint "next=undef", ! defined($db->next);
+
 tprint "close", $db->close;

@@ -104,7 +104,7 @@ ag_extract(dbh,attr,val,maxsz)
 		int		val;
 		int		maxsz;
 	INIT:
-		char *buf;
+		char *buf=NULL;
 	CODE:
 		if(! maxsz)
 		 maxsz=ag_db_stat(dbh,attr,val);
@@ -125,7 +125,8 @@ ag_extract(dbh,attr,val,maxsz)
 	OUTPUT:
 		RETVAL
 	CLEANUP:
-		Safefree(buf);
+		if(buf)
+		 Safefree(buf);
 
 int
 ag_replace(dbh,attr,val,buf)

@@ -9,7 +9,7 @@ use Error;
 ##
 # Package version
 #
-our $VERSION = '0.3';
+our $VERSION = '0.5';
 
 require Exporter;
 require DynaLoader;
@@ -127,7 +127,7 @@ sub new ($%)
 sub close ($)
 { my $self=shift;
   my $rc=ag_db_close($$self);
-  $rc==0 || throw Error::Simple ref($self)."::close - can't close";
+  $rc==0 || throw Error::Simple ref($self)."::close - $!";
   $$self=undef;
   1;
 }
@@ -146,7 +146,7 @@ sub DESTROY ($)
 sub delete_file ($)
 { my $self=shift;
   my $rc=ag_db_delete($$self);
-  $rc==0 || throw Error::Simple ref($self)."::delete_file";
+  $rc==0 || throw Error::Simple ref($self)."::delete_file - $!";
   1;
 }
 
@@ -156,7 +156,7 @@ sub delete_file ($)
 sub lock ($)
 { my $self=shift;
   my $rc=ag_db_lock($$self);
-  $rc==0 || throw Error::Simple ref($self)."::lock";
+  $rc==0 || throw Error::Simple ref($self)."::lock - $!";
   1;
 }
 
@@ -166,7 +166,7 @@ sub lock ($)
 sub rewind ($)
 { my $self=shift;
   my $rc=ag_db_rewind($$self);
-  $rc==0 || throw Error::Simple ref($self)."::rewind";
+  $rc==0 || throw Error::Simple ref($self)."::rewind - $!";
   1;
 }
 
@@ -176,12 +176,12 @@ sub rewind ($)
 sub unlock ($)
 { my $self=shift;
   my $rc=ag_db_unlock($$self);
-  $rc==0 || throw Error::Simple ref($self)."::unlock";
+  $rc==0 || throw Error::Simple ref($self)."::unlock - $!";
   1;
 }
 
 ##
-# Moving to the gien record
+# Moving to the given record. Creating it if "create" argument given.
 #
 sub seek ($%)
 { my $self=shift;
@@ -203,7 +203,7 @@ sub seek ($%)
 sub commit ($)
 { my $self=shift;
   my $rc=ag_db_write($$self);
-  $rc==0 || throw Error::Simple ref($self)."::commit";
+  $rc==0 || throw Error::Simple ref($self)."::commit - $!";
   1;
 }
 
@@ -213,7 +213,7 @@ sub commit ($)
 sub release ($)
 { my $self=shift;
   my $rc=ag_db_release($$self);
-  $rc==0 || throw Error::Simple ref($self)."::release";
+  $rc==0 || throw Error::Simple ref($self)."::release - $!";
   1;
 }
 
@@ -223,7 +223,7 @@ sub release ($)
 sub drop ($)
 { my $self=shift;
   my $rc=ag_db_delrec($$self);
-  $rc==0 || throw Error::Simple ref($self)."::drop";
+  $rc==0 || throw Error::Simple ref($self)."::drop - $!";
   1;
 }
 
@@ -233,7 +233,7 @@ sub drop ($)
 sub next ($%)
 { my $self=shift;
   my $args=get_args(\@_);
-  ag_readnext($args->{lock} || 0);
+  ag_readnext($$self,$args->{lock} || 0);
 }
 
 ##
@@ -274,7 +274,7 @@ sub delete ($%)
   my $attr=$args->{attribute} || $args->{attr} || 0;
   my $value=$args->{value} || $args->{val} || 0;
   my $rc=ag_delete($$self,$attr,$value);
-  $rc==0 || throw Error::Simple ref($self)."::delete";
+  $rc==0 || throw Error::Simple ref($self)."::delete - $!";
   1;
 }
 
@@ -298,7 +298,7 @@ sub insert ($%)
   my $attr=$args->{attribute} || $args->{attr} || 0;
   my $value=$args->{value} || $args->{val} || 0;
   my $rc=ag_insert($$self,$attr,$value,$args->{text} || '');
-  $rc==0 || throw Error::Simple ref($self)."::insert";
+  $rc==0 || throw Error::Simple ref($self)."::insert - $!";
   1;
 }
 
@@ -311,8 +311,54 @@ sub replace ($%)
   my $attr=$args->{attribute} || $args->{attr} || 0;
   my $value=$args->{value} || $args->{val} || 0;
   my $rc=ag_replace($$self,$attr,$value,$args->{text} || '');
-  $rc==0 || throw Error::Simple ref($self)."::replace";
+  $rc==0 || throw Error::Simple ref($self)."::replace - $!";
   1;
+}
+
+##
+# Reads entire attribute returning array of all values even if only one
+# exists. Values are numbered from 0, not form 1, be careful!
+#
+# Returns array reference or array itself in array context.
+#
+sub attribute ($%)
+{ my $self=shift;
+  my $attr;
+  if(@_==1 && !ref($_[0]))
+   { $attr=$_[0] || 0;
+   }
+  else
+   { my $args=get_args(\@_);
+     $attr=$args->{attribute} || $args->{attr} || 0;
+   }
+  my $valnum=$self->values_number(attribute => $attr);
+  my @arr;
+  for(my $val=0; $val!=$valnum; $val++)
+   { push @arr,$self->extract(attribute => $attr, value => $val + 1);
+   }
+  wantarray ? @arr : \@arr;
+}
+
+##
+# Reads entire current record into array of the following structure:
+#  [ 'key',
+#    [ 'multi', 'valued', 'attribute' ],
+#    'single valued attribute',
+#    ...
+#  ]
+#  
+# Returns array reference or array itself in array context.
+#
+sub record ($)
+{ my $self=shift;
+  my @data;
+  my $na=$self->attributes_number;
+  for(my $attr=0; $attr!=$na; $attr++)
+   { my @ad=$self->attribute($attr);
+     next unless @ad;
+     $data[$attr]=@ad == 1 ? $ad[0] : \@ad;
+   }
+  wantarray ? @data : \@data;
 }
 
 ##
@@ -331,14 +377,14 @@ sub get_args (@)
   my $args;
   if(@{$arr} == 1)
    { $args=$arr->[0];
-     carp "Symphero::Utils::get_args - Not a HASH in arguments" unless ref($args) eq "HASH";
+     throw Error::Simple "Not a HASH in arguments" unless ref($args) eq "HASH";
    }
   elsif(! (scalar(@{$arr}) % 2))
    { my %a=@{$arr};
      $args=\%a;
    }
   else
-   { carp "Symphero::Utils::get_args - unparsable arguments";
+   { throw Error::Simple "Unparsable arguments";
    }
   $args={} unless $args;
   $args;
@@ -366,13 +412,17 @@ Object oriented:
 
   $db->seek(key => 'Test);
 
+  my $data=$db->record;
+
+  print "quantity=", $data->[123]->[2];
+
   $db->replace(attribute => '1', value => '2', text => 'Test Data 1-2');
 
   $db->commit;
 
   $db->close;
 
-Function oriented:
+Function oriented (mimics appgen C toolkit):
 
   use DB::Appgen qw(:all);
 
@@ -552,6 +602,27 @@ field at $attr/$value it is renumbered one higher.
 Replaces the field pointed to by attribute and value. Any fields between
 the end of the I<current record> and the specified field will be created
 if required.
+
+=head1 SUPPORTING METHODS
+
+=head2 $db->attribute(attribute => $attr);
+
+Reads entire attribute returning array of all values even if only one
+exists. B<Values are numbered from 0, not form 1, be careful!>
+
+Returns array reference or array itself in array context.
+
+=head2 $db->record;
+
+Reads entire I<current record> into array of the following structure:
+  [ 'key',
+    [ 'multi', 'valued', 'attribute' ],
+    'single valued attribute',
+    ...
+   ]
+
+Returns array reference or array itself in array context.
+B<Values are numbered from 0, not form 1, be careful!>
 
 =head1 EXPORT
 

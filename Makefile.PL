@@ -2,23 +2,23 @@ use ExtUtils::MakeMaker;
 #######################################################################################
 # Put your appgen library here (see README for details)
 #
-my $appgenlibdir='/home/am/src/appgen/lib';
+my $appgenlibdir='appgen-libs';
 #
 # That's all you need to change.
 #######################################################################################
-while(! -x $appgenlibdir || ! -r "$appgenlibdir/libappgen_appl.a"
-                         || ! -r "$appgenlibdir/libappgen_strings.a"
-                         || ! -r "$appgenlibdir/libappgen.a")
-{ print <<EOT;
-You did not set up APPGEN library correctly. Please read README
+if(! -x $appgenlibdir || ! -r "$appgenlibdir/libappgen_appl.a"
+                      || ! -r "$appgenlibdir/libappgen_strings.a"
+                      || ! -r "$appgenlibdir/libappgen.a") {
+    print <<EOT;
+You did not set up APPGEN library correctly. Please read the README file
 and follow instructions. The following files must exist:
+
 $appgenlibdir/libappgen_appl.a
 $appgenlibdir/libappgen_strings.a
 $appgenlibdir/libappgen.a
 
 EOT
-  print "Enter APPGEN library path here: ";
-  ($appgenlibdir=<STDIN>) =~ s/[\s\n\r]//sg;
+    die "Cannot continue without proper APPGEN libraries\n";
 }
 
 WriteMakefile(
@@ -31,8 +31,8 @@ WriteMakefile(
     },
     'LIBS'              => [
         '-L' . $appgenlibdir .
-            ' -lappgen_appl -lappgen -lappgen_strings' .
-            ' -lncurses',
+        ' -lappgen_appl -lappgen -lappgen_strings' .
+        ' -lncurses',
     ],
     'DEFINE'            => '',
     'INC'               => '',

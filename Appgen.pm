@@ -9,7 +9,7 @@ use Error;
 ##
 # Package version
 #
-our $VERSION = '0.5';
+our $VERSION = '1.01';
 
 require Exporter;
 require DynaLoader;
@@ -333,7 +333,7 @@ sub attribute ($%)
    }
   my $valnum=$self->values_number(attribute => $attr);
   my @arr;
-  for(my $val=0; $val!=$valnum; $val++)
+  for(my $val=0; $val<$valnum; $val++)
    { push @arr,$self->extract(attribute => $attr, value => $val + 1);
    }
   wantarray ? @arr : \@arr;
@@ -353,7 +353,7 @@ sub record ($)
 { my $self=shift;
   my @data;
   my $na=$self->attributes_number;
-  for(my $attr=0; $attr!=$na; $attr++)
+  for(my $attr=0; $attr<$na; $attr++)
    { my @ad=$self->attribute($attr);
      next unless @ad;
      $data[$attr]=@ad == 1 ? $ad[0] : \@ad;
@@ -630,11 +630,12 @@ None by default.
 
 =head1 AUTHOR
 
-Andrew Maltsev <am@xao.com>
+Copyright (c) 2000 XAO Inc., Andrew Maltsev
 
 =head1 SEE ALSO
 
-http://bravenewworlds.com/, http://sourceforge.net/projects/dbappgen/,
+http://xao.com/,
+http://sourceforge.net/projects/dbappgen/,
 http://appgen.com/
 
 =cut

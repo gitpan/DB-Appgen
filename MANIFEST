@@ -1,10 +1,13 @@
-Appgen.pm
-Appgen.xs
-Changes
-Makefile.PL
+CHANGES
+LICENSE
 MANIFEST
+MANIFEST.SKIP
+META.yml
 README
 TODO
+Makefile.PL
+Appgen.pm
+Appgen.xs
 aglib/aglib.c
 aglib/aglib.h
 aglib/Makefile.PL

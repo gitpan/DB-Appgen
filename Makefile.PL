@@ -22,18 +22,24 @@ EOT
 }
 
 WriteMakefile(
-    'NAME'		=> 'DB::Appgen',
-    'VERSION_FROM'	=> 'Appgen.pm',
-    'PREREQ_PM'		=> { Error => 0.13
-                           },
-    'LIBS'		=> [ '-L' . $appgenlibdir .
-                             ' -lappgen_appl -lappgen -lappgen_strings' .
-                             ' -lncurses'
-                           ],
-    'DEFINE'		=> '',
-    'INC'		=> '',
-    'MYEXTLIB'		=> 'aglib/libappgen$(LIB_EXT)',
-    'clean'		=> {'FILES' => 'test.db' },
+    'NAME'              => 'DB::Appgen',
+    'ABSTRACT'          => 'Perl interface for APPGEN Custom Suite databases',
+    'AUTHOR'            => 'Andrew Maltsev',
+    'VERSION_FROM'      => 'Appgen.pm',
+    'PREREQ_PM'         => {
+        Error => 0.13,
+    },
+    'LIBS'              => [
+        '-L' . $appgenlibdir .
+            ' -lappgen_appl -lappgen -lappgen_strings' .
+            ' -lncurses',
+    ],
+    'DEFINE'            => '',
+    'INC'               => '',
+    'MYEXTLIB'          => 'aglib/libappgen$(LIB_EXT)',
+    'clean'             => {
+        'FILES' => 'test.db'
+    },
 );
 
 sub MY::postamble
